@@ -1,4 +1,4 @@
-package com.project.bankingSystem;
+package com.project.bankingSystem.repositories;
 
 import com.project.bankingSystem.models.User;
 import jakarta.persistence.LockModeType;
@@ -13,9 +13,9 @@ import java.util.Optional;
 public interface UserRepository extends JpaRepository<User,Long>{
         Optional<User> findByUsername(String username);
 
-//        @Lock(LockModeType.PESSIMISTIC_WRITE)
-//        @Query("SELECT u FROM User u WHERE u.id = :id")
-//        Optional<User> findByIdForUpdate(@Param("id") Long id);
+        @Lock(LockModeType.PESSIMISTIC_WRITE)
+        @Query("SELECT u FROM User u WHERE u.id = :id")
+        Optional<User> findByIdForUpdate(@Param("id") Long id);
 
 
 

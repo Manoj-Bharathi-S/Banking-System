@@ -21,15 +21,15 @@ public class User {
     @Id
     @GeneratedValue
     Long id;
+    Long ac;
     @NotNull
     @Column(unique = true, nullable = false)
     String username;
-    long ac;
     @Email
     String email;
     @NotNull
     String password;
     Double balance;
-//    @Version
-//    private Long version;
+    @Version
+    private Long version;
 }

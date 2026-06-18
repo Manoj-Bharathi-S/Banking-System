@@ -2,8 +2,7 @@ package com.project.bankingSystem;
 
 
 import com.project.bankingSystem.models.User;
-import com.project.bankingSystem.UserRepository;
-import  com.project.bankingSystem.UserService;
+import com.project.bankingSystem.repositories.UserRepository;
 
 import com.project.bankingSystem.utils.JwtUtil;
 import lombok.RequiredArgsConstructor;
@@ -45,14 +44,19 @@ public class AuthController {
     public ResponseEntity<?> loginUser(@RequestBody Map<String,String> body){
         String username = body.get("username");
         String password = body.get("password");
+
         var userOptional = userRepository.findByUsername(username);
-        if(userOptional.isEmpty()){
-            return new ResponseEntity<>("User does not Exist", HttpStatus.NOT_FOUND);
+
+        String hashToCheck = userOptional.isPresent()
+                ? userOptional.get().getPassword()
+                : "$2a$10$S8Z4UcL9NbdGTVLZVwp9RP.Kxq90K3BMU6GEgwdRuIHQBlzHzH0iFS";
+
+        boolean passwordMatches = passwordEncoder.matches(password, hashToCheck);
+
+        if (userOptional.isEmpty() || !passwordMatches) {
+            return new ResponseEntity<>("Invalid Credentials", HttpStatus.UNAUTHORIZED);
         }
-        User user = userOptional.get();
-        if(!passwordEncoder.matches(password,user.getPassword())){
-            return new ResponseEntity<>("Invalid Password",HttpStatus.UNAUTHORIZED);
-        }
+
         String token = jwtUtil.generateToken(username);
         return ResponseEntity.ok(Map.of("token",token));
 

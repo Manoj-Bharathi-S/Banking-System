@@ -1,12 +1,10 @@
 package com.project.bankingSystem;
 
-import com.project.bankingSystem.models.Payment;
-import com.project.bankingSystem.models.Transaction;
-import com.project.bankingSystem.models.User;
+import com.project.bankingSystem.models.*;
+import com.project.bankingSystem.repositories.TransactionRepository;
+import com.project.bankingSystem.repositories.UserRepository;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -15,72 +13,106 @@ public class BankingService {
     @Autowired
     private UserService userService;
     @Autowired TransactionService transactionService;
-
-    public Transaction pay(Payment payment) {
-        User sender = userService.getUser(payment.getFrom_id());
-        User receiver = userService.getUser(payment.getTo_id());
-
-        if(sender == null || receiver == null){
-            return null;
-        }
+    @Autowired
+    private TransactionRepository transactionRepository;
+    @Autowired
+    private UserRepository userRepository;
 
 
-        Double amount = payment.getAmount();
-        if(sender.getBalance() < amount){
-            return null;
-        }
-        receiver.setBalance(receiver.getBalance() + amount);
-        sender.setBalance(sender.getBalance() - amount);
 
-        Transaction txn1 = Transaction.builder()
-                .user_id(payment.getFrom_id())
-                .debit(payment.getAmount())
-                .credit(0.00)
-                .balance(sender.getBalance())
-                .createdAt(LocalDateTime.now())
-                .build();
-
-        Transaction txn2 = Transaction.builder()
-                .user_id(payment.getTo_id())
-                .debit(0.00)
-                .credit(payment.getAmount())
-                .balance(receiver.getBalance())
-                .createdAt(LocalDateTime.now())
-                .build();
-
-        transactionService.createTransaction(txn2);
-        return txn1;
-
-    }
-
-    public Transaction withdraw(Transaction transaction) {
-        User user = userService.getUser(transaction.getUser_id());
+    public Transaction withdraw(Payment payment) {
+        User user = userService.getUser(payment.getFrom_id());
 //                .orElseThrow(() -> new RuntimeException("Account profile not found"));
 
-        if(user.getBalance() < transaction.getDebit()){
+        if(user.getBalance() < payment.getAmount()){
             return null;
         }
-        Double curr_balance = user.getBalance() - transaction.getDebit();
+        Double curr_balance = user.getBalance() - payment.getAmount();
+        Double amount = payment.getAmount();
+        Transaction tx = Transaction.builder()
+                .user(user)
+                .amount(amount)
+                .type(TransactionType.WITHDRAWAL)
+                .balanceAfterTransaction(curr_balance)
+                .createdAt(LocalDateTime.now())
+                .relatedAccountId(user.getId())
+                .build();
 
-        transaction.setCreatedAt(LocalDateTime.now());
-        transaction.setBalance(curr_balance);
-        transaction.setCredit(0.00);
         user.setBalance(curr_balance);
         userService.updateBalance(user);
-        return transaction;
+        return transactionRepository.save(tx);
+
     }
 
-    public Transaction deposit(Transaction transaction) {
-        User user = userService.getUser(transaction.getUser_id());
-        Double curr_balance = user.getBalance() + transaction.getCredit();
 
-        transaction.setCreatedAt(LocalDateTime.now());
-        transaction.setBalance(curr_balance);
-        transaction.setDebit(0.00);
+
+    @Transactional
+    public Transaction deposit(Payment payment) {
+        var userOptional = userRepository.findByIdForUpdate(payment.getFrom_id());
+        if(userOptional.isEmpty()){
+            return null;
+        }
+        User user = userOptional.get();
+
+        Double curr_balance = user.getBalance() + payment.getAmount();
+
+        Transaction tx = Transaction.builder()
+                .user(user)
+                .amount(payment.getAmount())
+                .type(TransactionType.DEPOSIT)
+                .balanceAfterTransaction(curr_balance)
+                .createdAt(LocalDateTime.now())
+                .relatedAccountId(user.getId())
+                .build();
 
         user.setBalance(curr_balance);
-//        transaction.setUser(user);
         userService.updateBalance(user);
-        return transaction;
+        return transactionRepository.save(tx);
+    }
+
+    public Double calculateCurrentBalance(Long userId) {
+        Double sum = transactionRepository.sumAllAmountsByUserId(userId);
+        return sum == 0 ? 0 : sum;
+    }
+
+    @Transactional
+    public Transaction transfer(Payment payment) {
+        // 1. Lock both rows to prevent race conditions
+        Long fromId = payment.getFrom_id();
+        Long toId = payment.getTo_id();
+        Double amount = payment.getAmount();
+        var senderOptional = userRepository.findByIdForUpdate(fromId);
+        var receiverOptional = userRepository.findByIdForUpdate(toId);
+
+        if(senderOptional.isEmpty() || receiverOptional.isEmpty()){
+            return null;
+        }
+        User sender = senderOptional.get();
+        User receiver = receiverOptional.get();
+
+        // 2. Execute logic
+        sender.setBalance(sender.getBalance() - amount);
+        receiver.setBalance(receiver.getBalance() + amount);
+
+        // 3. Create two ledger entries
+        Transaction tx1 = Transaction.builder()
+                .user(sender)
+                .amount(amount)
+                .type(TransactionType.TRANSFER_OUT)
+                .balanceAfterTransaction(sender.getBalance())
+                .createdAt(LocalDateTime.now())
+                .relatedAccountId(receiver.getId())
+                .build();
+
+        Transaction tx2 = Transaction.builder()
+                .user(receiver)
+                .amount(amount)
+                .type(TransactionType.TRANSFER_IN)
+                .balanceAfterTransaction(receiver.getBalance())
+                .createdAt(LocalDateTime.now())
+                .relatedAccountId(sender.getId())
+                .build();
+        transactionRepository.save(tx2);
+        return transactionRepository.save(tx1);
     }
 }
