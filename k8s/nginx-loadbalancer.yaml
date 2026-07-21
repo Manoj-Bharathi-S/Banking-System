@@ -1,0 +1,83 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-config
+data:
+  nginx.conf: |
+    events {
+        worker_connections 1024;
+    }
+
+    http {
+        upstream backend_servers {
+            server backend-service:8000;
+        }
+
+        upstream frontend_server {
+            server frontend-service:80;
+        }
+
+        server {
+            listen 80;
+            server_name localhost;
+
+            # Route API calls to backend service pool
+            location ~ ^/(auth|profile|mybalance|deposit|withdraw|transfer) {
+                proxy_pass http://backend_servers;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+            }
+
+            # Route requests to frontend service
+            location / {
+                proxy_pass http://frontend_server;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+            }
+        }
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-loadbalancer-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx-loadbalancer
+  template:
+    metadata:
+      labels:
+        app: nginx-loadbalancer
+    spec:
+      containers:
+        - name: nginx-loadbalancer
+          image: nginx:alpine
+          ports:
+            - containerPort: 80
+              name: http
+          volumeMounts:
+            - name: config-volume
+              mountPath: /etc/nginx/nginx.conf
+              subPath: nginx.conf
+      volumes:
+        - name: config-volume
+          configMap:
+            name: nginx-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-loadbalancer
+spec:
+  selector:
+    app: nginx-loadbalancer
+  ports:
+    - port: 80
+      targetPort: 80
+  type: LoadBalancer

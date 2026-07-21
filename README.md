@@ -85,3 +85,28 @@ Make sure you have [Docker](https://www.docker.com/) and Docker Compose installe
 The application is configured to preserve transaction history and user records across restarts:
 - **`spring.jpa.hibernate.ddl-auto`** is set to **`update`** to ensure tables are not dropped on restart.
 - To change database settings, configure the environment variables inside `docker-compose.yml`.
+
+---
+
+## Kubernetes Deployment (Alternative)
+
+All necessary manifests to run the application in a Kubernetes cluster are provided in the `/k8s` directory:
+
+1. **Deploy all manifests**:
+   ```bash
+   kubectl apply -f k8s/
+   ```
+
+2. **Verify services**:
+   ```bash
+   kubectl get pods,svc
+   ```
+
+3. **Access the application**:
+   - The `nginx-loadbalancer` service is of type `LoadBalancer`.
+   - Retrieve the external IP:
+     ```bash
+     kubectl get service nginx-loadbalancer
+     ```
+   - Access the application at `http://<EXTERNAL-IP>` (or `http://localhost` if using Docker Desktop / Minikube tunnel).
+
