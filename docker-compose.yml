@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  mysqldb:
+    image: mysql:8.0
+    container_name: banking_mysql
+    restart: always
+    environment:
+      MYSQL_DATABASE: bank
+      MYSQL_ROOT_PASSWORD: supersecurepassword
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-psupersecurepassword" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./bank_backend
+      dockerfile: Dockerfile
+    restart: always
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysqldb:3306/bank?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: supersecurepassword
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+    depends_on:
+      mysqldb:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./bank_frontend
+      dockerfile: Dockerfile
+    restart: always
+
+  loadbalancer:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    container_name: banking_loadbalancer
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - frontend
+      - backend
+
+volumes:
+  mysql_data:

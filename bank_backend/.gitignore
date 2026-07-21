@@ -1,0 +1,19 @@
+# Maven build directory
+target/
+
+# Maven wrapper and script files
+.mvn/
+mvnw
+mvnw.cmd
+
+# Release/Backup files
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.next
+pom.xml.versionsBackup
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+
+# Logs
+*.log
