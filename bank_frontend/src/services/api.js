@@ -31,10 +31,15 @@ const fetchWithAuth = async (endpoint, options = {}) => {
   if (!response.ok) {
     let errorMsg = 'An error occurred';
     try {
-      const errorData = await response.json();
-      errorMsg = errorData.message || errorData.error || errorMsg;
+      const text = await response.text();
+      try {
+        const errorData = JSON.parse(text);
+        errorMsg = errorData.message || errorData.error || text || errorMsg;
+      } catch (e) {
+        errorMsg = text || errorMsg;
+      }
     } catch (e) {
-      errorMsg = await response.text() || errorMsg;
+      // Ignore text extraction errors if stream is empty/closed
     }
     throw new Error(errorMsg);
   }

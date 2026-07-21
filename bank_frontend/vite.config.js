@@ -6,12 +6,12 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      '/auth': 'http://localhost:8080',
-      '/profile': 'http://localhost:8080',
-      '/mybalance': 'http://localhost:8080',
-      '/deposit': 'http://localhost:8080',
-      '/withdraw': 'http://localhost:8080',
-      '/transfer': 'http://localhost:8080'
+      '/auth': 'http://localhost:8000',
+      '/profile': 'http://localhost:8000',
+      '/mybalance': 'http://localhost:8000',
+      '/deposit': 'http://localhost:8000',
+      '/withdraw': 'http://localhost:8000',
+      '/transfer': 'http://localhost:8000'
     }
   }
 })

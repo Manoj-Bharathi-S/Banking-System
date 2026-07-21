@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
 import { LogOut, ArrowUpRight, ArrowDownRight, RefreshCcw, User as UserIcon } from 'lucide-react';
 import TransactionModal from '../components/TransactionModal';
+import bankLogo from '../assets/bank_log.png';
 
 export default function Dashboard() {
   const { user, logout } = useAuth();
@@ -46,10 +47,9 @@ export default function Dashboard() {
   return (
     <div className="app-container">
       <nav className="navbar">
-        <div className="navbar-brand">
-          <div style={{ background: 'var(--primary-color)', padding: '8px', borderRadius: '8px' }}>
-            <span style={{ fontSize: '1.2rem', color: 'white' }}>NexusBank</span>
-          </div>
+        <div className="navbar-brand" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <img src={bankLogo} alt="MBI Logo" style={{ height: '32px', width: 'auto', objectFit: 'contain' }} />
+          <span style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'white', letterSpacing: '1px' }}>MBI</span>
         </div>
         <div className="navbar-links">
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginRight: '16px' }}>
@@ -95,11 +95,11 @@ export default function Dashboard() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             <div>
               <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '4px' }}>User ID</div>
-              <div style={{ fontSize: '1.1rem', fontWeight: 500 }}>{user.id || 'N/A'}</div>
+              <div style={{ fontSize: '1.1rem', fontWeight: 500 }}>{user.id != null ? user.id : 'N/A'}</div>
             </div>
             <div>
               <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Username</div>
-              <div style={{ fontSize: '1.1rem', fontWeight: 500 }}>{user.username}</div>
+              <div style={{ fontSize: '1.1rem', fontWeight: 500 }}>{user.username || 'N/A'}</div>
             </div>
             <div>
               <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Email Address</div>
@@ -107,7 +107,7 @@ export default function Dashboard() {
             </div>
             <div>
               <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Account Number</div>
-              <div style={{ fontSize: '1.1rem', fontWeight: 500 }}>{user.ac || 'N/A'}</div>
+              <div style={{ fontSize: '1.1rem', fontWeight: 500 }}>{user.ac != null ? user.ac : 'N/A'}</div>
             </div>
           </div>
         </div>
@@ -118,7 +118,7 @@ export default function Dashboard() {
         type={modalConfig.type} 
         onClose={() => setModalConfig({ isOpen: false, type: null })}
         onSuccess={handleTransactionSuccess}
-        currentUserId={user.id || user.ac}
+        currentUserId={user.id}
       />
     </div>
   );

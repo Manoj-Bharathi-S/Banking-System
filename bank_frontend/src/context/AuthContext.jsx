@@ -30,6 +30,12 @@ export const AuthProvider = ({ children }) => {
     const newToken = response.token || response; // fallback if it's just a string
     setApiToken(newToken);
     setTokenState(newToken);
+    try {
+      const profileData = await api.getProfile();
+      setUser(profileData);
+    } catch (err) {
+      console.error("Failed to fetch profile after login", err);
+    }
   };
 
   const register = async (userData) => {

@@ -32,11 +32,9 @@ export default function Register() {
     try {
       // Process form data appropriately
       const payload = {
-        ...formData,
-        id: Number(formData.id) || 0,
-        ac: Number(formData.ac) || 0,
-        balance: Number(formData.balance) || 0,
-        version: Number(formData.version) || 0
+        username: formData.username,
+        email: formData.email,
+        password: formData.password
       };
       await register(payload);
       setSuccess('Registration successful! Redirecting to login...');
