@@ -11,11 +11,14 @@ pipeline {
         FRONTEND_IMAGE             = "${env.DOCKER_REGISTRY}/bank-frontend:${env.BUILD_NUMBER}"
         NGINX_IMAGE                = "${env.DOCKER_REGISTRY}/bank-nginx:${env.BUILD_NUMBER}"
     }
-
+tools {
+        // Automatically sets PATH for ALL stages in the pipeline
+        nodejs 'NodeJS-26' 
+    }
     stages {
         stage('Checkout') {
             steps {
-                checkout scm
+                git branch: 'main', url: 'https://github.com/Manoj-Bharathi-S/Banking-System'
             }
         }
 
@@ -26,7 +29,6 @@ pipeline {
                 }
             }
         }
-
         stage('Build Frontend') {
             steps {
                 dir('bank_frontend') {
