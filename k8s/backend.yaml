@@ -12,6 +12,10 @@ spec:
       labels:
         app: backend
     spec:
+      initContainers:
+        - name: wait-for-mysql
+          image: busybox:1.36
+          command: ['sh', '-c', 'until nc -z -v -w30 mysql-service 3306; do echo "Waiting for mysql-service:3306..."; sleep 2; done']
       containers:
         - name: backend
           image: bank_backend:latest
