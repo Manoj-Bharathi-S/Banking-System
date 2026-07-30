@@ -1,8 +1,9 @@
 services:
   - type: pserv
     name: mysqldb
-    env: docker
-    image: mysql:8.0
+    env: image
+    image:
+      url: mysql:8.0
     disk:
       name: mysql_data
       mountPath: /var/lib/mysql
