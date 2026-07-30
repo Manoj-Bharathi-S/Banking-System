@@ -1,0 +1,49 @@
+services:
+  - type: pserv
+    name: mysqldb
+    env: docker
+    image: mysql:8.0
+    disk:
+      name: mysql_data
+      mountPath: /var/lib/mysql
+      sizeGB: 10
+    envVars:
+      - key: MYSQL_DATABASE
+        value: bank
+      - key: MYSQL_ROOT_PASSWORD
+        generateValue: true
+
+  - type: pserv
+    name: backend
+    env: docker
+    dockerContext: ./bank_backend
+    dockerfilePath: ./bank_backend/Dockerfile
+    envVars:
+      - key: SPRING_DATASOURCE_URL
+        value: jdbc:mysql://mysqldb:3306/bank?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      - key: SPRING_DATASOURCE_USERNAME
+        value: root
+      - key: SPRING_DATASOURCE_PASSWORD
+        fromService:
+          type: pserv
+          name: mysqldb
+          envVarKey: MYSQL_ROOT_PASSWORD
+      - key: SPRING_JPA_HIBERNATE_DDL_AUTO
+        value: update
+
+  - type: pserv
+    name: frontend
+    env: docker
+    dockerContext: ./bank_frontend
+    dockerfilePath: ./bank_frontend/Dockerfile
+
+  - type: web
+    name: loadbalancer
+    env: docker
+    dockerContext: ./nginx
+    dockerfilePath: ./nginx/Dockerfile
+    envVars:
+      # Render web services map external traffic to the port exposed in the Dockerfile.
+      # Nginx config typically listens on 80.
+      - key: PORT
+        value: 80
